@@ -1,8 +1,8 @@
 node_modules
 dist
-build
+coverage
 .git
-.eslint.config.mts
+eslint.config.mts
 Dockerfile
 .dockerignore
 npm-debug.log
