@@ -4,6 +4,8 @@ import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import * as YAML from 'yaml';
 
+import {logger} from '../infrastructure/logging/logger';
+
 const app = express();
 app.use(express.json());
 
@@ -14,6 +16,6 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const port = process.env.PORT || 4010;
 app.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}`);
-    console.log(`Swagger docs at http://localhost:${port}/docs`);
+    logger.info(`Server listening on http://localhost:${port}`);
+    logger.info(`Swagger docs at http://localhost:${port}/docs`);
 });
