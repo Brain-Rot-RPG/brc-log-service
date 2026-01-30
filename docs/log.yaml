@@ -1,0 +1,164 @@
+openapi: 3.0.3
+info:
+  title: Brain Rot Chronicles - Logging Service
+  description: >
+    Service centralisé de gestion des logs. 
+    Ingestion asynchrone via RabbitMQ et stockage NoSQL.
+    Standardise les traces de tous les microservices pour le monitoring et l'audit.
+  version: 1.0.0
+servers:
+  - url: http://localhost:4009/api/v1/logs
+    description: Serveur de développement local
+
+paths:
+  /:
+    get:
+      summary: Consultation globale des logs
+      description: Permet de filtrer l'activité système. Réservé aux administrateurs (isSigma).
+      tags: [Consultation]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: serviceSource
+          in: query
+          description: "Nom du service émetteur (ex: auth-service)."
+          schema: { type: string }
+        - name: level
+          in: query
+          description: Sévérité du log.
+          schema: { type: string, enum: [INFO, WARN, ERROR, DEBUG] }
+        - name: userId
+          in: query
+          description: Filtrer par l'identifiant d'un utilisateur.
+          schema: { type: string, format: uuid }
+        - name: traceId
+          in: query
+          description: ID unique de transaction pour suivre une requête.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Liste des logs récupérée.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogEntry'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /user/{userId}:
+    get:
+      summary: Historique d'activité d'un utilisateur
+      description: Récupère chronologiquement tous les logs liés à un compte spécifique.
+      tags: [Consultation]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Historique récupéré.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogEntry'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LogEntry:
+      type: object
+      required: [id, timestamp, serviceSource, level, action]
+      properties:
+        id:
+          type: string
+          description: Identifiant unique NoSQL.
+          example: "65f8a2b1c9e4b3001d8e9f2a"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-30T10:45:00Z"
+        traceId:
+          type: string
+          description: ID de transaction généré par la Gateway.
+          example: "req-123-xyz"
+        serviceSource:
+          type: string
+          example: "user-service"
+        level:
+          type: string
+          enum: [INFO, WARN, ERROR, DEBUG]
+          example: "INFO"
+        action:
+          type: string
+          description: Nom de l'action ou de l'endpoint.
+          example: "GET /me"
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          example: "a1b2c3d4-e5f6-4g7h-8i9j"
+        message:
+          type: string
+          description: Message descriptif simplifié.
+          example: "Appel API réussi"
+        details:
+          type: object
+          additionalProperties: true
+          description: Métadonnées techniques flexibles (statusCode, latencyMs, payload...).
+          example: { "method": "GET", "statusCode": 200, "latencyMs": 15 }
+
+    ErrorModel:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: "LOG_NOT_FOUND" }
+        message: { type: string, example: "Aucun log correspondant trouvé." }
+        timestamp: { type: string, format: date-time }
+
+  responses:
+    UnauthorizedError:
+      description: Authentification JWT échouée.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorModel' }
+    ForbiddenError:
+      description: Accès refusé (isSigma requis).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorModel' }
+    NotFoundError:
+      description: Ressource introuvable.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorModel' }
+    InternalError:
+      description: Erreur serveur inattendue.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorModel' }
