@@ -5,7 +5,6 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import stylistic from '@stylistic/eslint-plugin';
 
 export default tseslint.config(
-  // On ignore les dossiers de build
   { ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'eslint.config.mts'] },
   
   eslint.configs.recommended,
@@ -23,18 +22,15 @@ export default tseslint.config(
       },
     },
     rules: {
-      // --- 1. NETTOYAGE AUTO DES IMPORTS ---
       'unused-imports/no-unused-imports': 'error',
       'unused-imports/no-unused-vars': [
         'warn',
         { 'vars': 'all', 'varsIgnorePattern': '^_', 'args': 'after-used', 'argsIgnorePattern': '^_' }
       ],
 
-      // --- 2. TRI AUTOMATIQUE (Crucial pour la Clean Arch) ---
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
 
-      // --- 3. STYLE & INDENTATION (Via Stylistic) ---
       '@stylistic/indent': ['error', 4],
       '@stylistic/quotes': ['error', 'single'],
       '@stylistic/semi': ['error', 'always'],
@@ -43,10 +39,9 @@ export default tseslint.config(
         singleline: { delimiter: 'semi', requireLast: false }
       }],
 
-      // --- 4. RÈGLES DE RIGUEUR (Sigma Style) ---
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'error'
     },
   }
 );
