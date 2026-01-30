@@ -1,0 +1,48 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: brc-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - brc-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: brc-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+    networks:
+      - brc-network
+
+  log-service:
+    build: .
+    container_name: brc-log-service
+    profiles: ["app"]
+    ports:
+      - "4010:4010"
+    depends_on:
+      - mongodb
+      - rabbitmq
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mongodb:27017/brc_logs
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - PORT=4010
+    networks:
+      - brc-network
+
+networks:
+  brc-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  rabbit-data:

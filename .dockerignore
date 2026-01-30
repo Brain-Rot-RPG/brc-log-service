@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+.git
+.eslint.config.mts
+Dockerfile
+.dockerignore
+npm-debug.log
