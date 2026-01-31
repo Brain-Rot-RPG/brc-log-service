@@ -6,3 +6,6 @@ eslint.config.mts
 Dockerfile
 .dockerignore
 npm-debug.log
+jest.config.ts
+**/*.spec.ts
+**/*.test.ts
