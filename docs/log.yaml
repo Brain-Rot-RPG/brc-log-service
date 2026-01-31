@@ -7,7 +7,7 @@ info:
     Standardise les traces de tous les microservices pour le monitoring et l'audit.
   version: 1.0.0
 servers:
-  - url: http://localhost:4009/api/v1/logs
+  - url: http://localhost:4010/api/v1/logs
     description: Serveur de développement local
 
 paths:
