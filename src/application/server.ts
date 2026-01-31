@@ -1,21 +1,60 @@
-import * as fs from 'node:fs';
+import type { Server } from 'node:http';
 
-import express from 'express';
-import swaggerUi from 'swagger-ui-express';
-import * as YAML from 'yaml';
+import { logger } from '../infrastructure/logging/logger.js';
+import { config } from '../shared/config.js';
+import { app } from './app.js';
 
-import {logger} from '../infrastructure/logging/logger';
+async function bootstrap() {
+    let server: Server;
 
-const app = express();
-app.use(express.json());
+    try {
+        server = app.listen(config.port, () => {
+            logger.info(`Server ready on port ${config.port} [${config.nodeEnv}]`);
+            logger.info(`Swagger docs: http://localhost:${config.port}/docs`);
+        });
 
-const file  = fs.readFileSync(require.resolve('../../docs/log.yaml'), 'utf8');
-const swaggerDocument = YAML.parse(file);
+        server.on('error', (err: Error) => {
+            logger.fatal({ err }, 'Server failed to start');
+            process.exit(1);
+        });
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+        setupGracefulShutdown(server);
 
-const port = process.env.PORT || 4010;
-app.listen(port, () => {
-    logger.info(`Server listening on http://localhost:${port}`);
-    logger.info(`Swagger docs at http://localhost:${port}/docs`);
-});
+    } catch (err) {
+        logger.fatal({ err }, 'Uncaught exception during bootstrap');
+        process.exit(1);
+    }
+}
+
+/**
+ * Gère la fermeture propre des ressources
+ * @param server - Instance du serveur HTTP à fermer
+ */
+function setupGracefulShutdown(server: Server) {
+    const signals = ['SIGTERM', 'SIGINT'] as const;
+
+    signals.forEach((signal) => {
+        process.on(signal, () => {
+            logger.info(`${signal} received. Starting graceful shutdown...`);
+
+            server.close(async () => {
+                logger.info('HTTP server closed.');
+
+                try {
+                    logger.info('Shutdown complete. Safe to exit.');
+                    process.exit(0);
+                } catch (err) {
+                    logger.error({ err }, 'Error during resource cleanup');
+                    process.exit(1);
+                }
+            });
+
+            setTimeout(() => {
+                logger.error('Shutdown timed out, forcing exit.');
+                process.exit(1);
+            }, 10000).unref();
+        });
+    });
+}
+
+await bootstrap();
