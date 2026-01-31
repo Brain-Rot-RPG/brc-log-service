@@ -1,10 +1,13 @@
 services:
   mongodb:
-    image: mongo:8
+    image: mongo:latest
     container_name: brc-mongodb
     restart: always
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS}
     volumes:
       - mongo-data:/data/db
     networks:
@@ -17,6 +20,9 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBIT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBIT_PASS}
     volumes:
       - rabbit-data:/var/lib/rabbitmq
     networks:
@@ -26,15 +32,13 @@ services:
     build: .
     container_name: brc-log-service
     profiles: ["app"]
-    ports:
-      - "4010:4010"
     depends_on:
       - mongodb
       - rabbitmq
     environment:
       - NODE_ENV=production
-      - MONGO_URI=mongodb://mongodb:27017/brc_logs
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASS}@mongodb:27017/brc_logs?authSource=admin
+      - RABBITMQ_URL=amqp://${RABBIT_USER}:${RABBIT_PASS}@rabbitmq:5672
       - PORT=4010
     networks:
       - brc-network
