@@ -1,9 +1,9 @@
-import type { NextFunction,Request, Response } from 'express';
+import type {Request, Response } from 'express';
 
 import { BaseError } from '../../../errors/BaseError.js';
 import { logger } from '../../logging/logger.js';
 
-export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction): void => {
+export const errorHandler = (err: Error, req: Request, res: Response): void => {
     if (err instanceof BaseError) {
         logger.warn({ err }, `Handled error: ${err.message}`);
         
