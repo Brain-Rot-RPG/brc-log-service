@@ -10,7 +10,7 @@ const LogSchema = new Schema<LogDocument>({
     payload: { type: Schema.Types.Mixed, default: {} },
     traceId: { type: String, required: true, index: true }
 }, {
-    timestamps: true, // adds createdAt, updatedAt
+    timestamps: true,
     versionKey: false
 });
 

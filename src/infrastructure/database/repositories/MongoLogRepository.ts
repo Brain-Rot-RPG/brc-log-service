@@ -1,3 +1,4 @@
+import type { LogFilters } from '../../../application/ports/driven/LogFilters.js';
 import type { LogRepository } from '../../../application/ports/driven/LogRepository.js';
 import type { Log } from '../../../domain/Log.js';
 import { DatabaseError } from '../../../errors/DatabaseError.js';
@@ -17,19 +18,38 @@ export class MongoLogRepository implements LogRepository {
         }
     }
 
-    async findRecent(limit: number, offset: number): Promise<{ items: Log[]; total: number }> {
+    async findAll(filters: LogFilters, limit: number, offset: number): Promise<{ items: Log[]; total: number }> {
         try {
+            // Utilisation d'un type générique pour la query Mongoose pour éviter les soucis d'import de types instables
+            const query: Record<string, unknown> = {};
+
+            if (filters.service) {
+                query.service = filters.service;
+            }
+            if (filters.level) {
+                query.level = filters.level;
+            }
+            if (filters.traceId) {
+                query.traceId = filters.traceId;
+            }
+            if (filters.userId) {
+                query['payload.userId'] = filters.userId;
+            }
+
             const [docs, total] = await Promise.all([
-                MongooseLogModel.find({})
+                MongooseLogModel.find(query)
                     .sort({ timestamp: -1 })
                     .skip(offset)
                     .limit(limit)
-                    .lean<LogDocument[]>(),
-                MongooseLogModel.countDocuments({})
+                    .lean(),
+                MongooseLogModel.countDocuments(query)
             ]);
 
+            // Casting explicite pour éviter les conflits de types Mongoose/TS
+            const typedDocs = docs as unknown as LogDocument[];
+
             return {
-                items: docs.map((doc) => LogMapper.toDomain(doc)),
+                items: typedDocs.map((doc) => LogMapper.toDomain(doc)),
                 total
             };
 

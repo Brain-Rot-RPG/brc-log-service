@@ -57,32 +57,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /user/{userId}:
-    get:
-      summary: Historique d'activité d'un utilisateur
-      description: Récupère chronologiquement tous les logs liés à un compte spécifique.
-      tags: [Consultation]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Historique récupéré.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/LogEntry'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-
 components:
   securitySchemes:
     bearerAuth:
